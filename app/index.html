@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link href="Styles.css" rel="stylesheet" />
+    <link href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" rel="stylesheet" />
+    <script type="text/javascript" src="http://ecn.dev.virtualearth.net/MapControl/mapcontrol.ashx?v=7.0"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $("#customer-info").dialog({
+                //modal: true,
+                autoOpen:false
+            });
+        });
+        var map = null;
+        var loc;
+        var key = 'Avil8gWzTQXkUMK09k2hoH-uWXHTgvtwI4Oppfow8dgTK-R1S4she86qS46_EgR2';
+        function jsonpCallback(data) {
+            var address = data.resourceSets[0].resources[0].address;
+            $('#state').val(address.adminDistrict);
+            $('#zipCode').val(address.postalCode);
+            $('#city').val(address.locality);
+            $('#address1').val(address.addressLine);
+            GetOtherInfo();
+        };
+        function reverseAddressCallback(data) {
+
+            console.log(data);
+            //var address = data.resourceSets[0].resources[0].address;
+            //$('#state').val(address.adminDistrict);
+            //$('#zipCode').val(address.postalCode);
+            //$('#city').val(address.locality);
+            //$('#address1').val(address.addressLine);
+        };
+        function GetMap() {
+            map = new Microsoft.Maps.Map(document.getElementById("myMap"),
+                {
+                    credentials: key,
+                    center: new Microsoft.Maps.Location(41.8756, -87.9956),
+                    mapTypeId: Microsoft.Maps.MapTypeId.automatic,
+                    zoom: 9,
+                });
+            var center = map.getCenter();
+            var dealerLocation = new Microsoft.Maps.Location(42.0625, -88.1289);
+            var dealerPin = new Microsoft.Maps.Pushpin(dealerLocation, { text: 'A', draggable: false });
+            var pin = new Microsoft.Maps.Pushpin(center, { text: 'B', draggable: true });
+
+            map.entities.push(pin);
+            map.entities.push(dealerPin);
+            
+            Microsoft.Maps.Events.addHandler(pin, 'dragstart', startDragHandler); 
+            Microsoft.Maps.Events.addHandler(pin, 'drag', dragHandler); 
+            Microsoft.Maps.Events.addHandler(pin, 'dragend', endDragHandler);
+            Microsoft.Maps.Events.addHandler(map, 'click', onclick);
+            
+            function startDragHandler(e) {
+                //document.getElementById("mode").innerHTML = "Dragging started (dragstart event).";
+            }
+
+            function dragHandler(e) {
+                //document.getElementById("mode").innerHTML = "Dragging in process (drag event)..";
+
+                
+                
+                //$.getJSON('http://dev.virtualearth.net/REST/v1/Locations?query=' + $("#txtAddress").val() + '&key=YOURBINGMAPSKEY&jsonp=?', function(result) {
+                //    alert("got a result");
+                //});
+
+
+            }
+            function endDragHandler(e) {
+                //document.getElementById("mode").innerHTML = "Dragging stopped (dragend event).";
+                loc = e.entity.getLocation();
+                //document.getElementById("MouseLat").innerHTML = loc.latitude.toFixed(4);
+                //document.getElementById("MouseLng").innerHTML = loc.longitude.toFixed(4);
+                var locationTobePassed = loc.latitude.toFixed(4) + ',' + loc.longitude.toFixed(4);
+                var url = 'http://dev.virtualearth.net/REST/v1/Locations/' + locationTobePassed + '?o=json&key=' + key
+                    + '&jsonp=jsonpCallback';
+                console.log(url);
+
+                $.ajax({
+                    type: 'GET',
+                    url: url,
+                    dataType: 'jsonp',
+                    crossDomain: true,
+                    timeout: 10000,
+                    //jsonpCallback: jsonpCallback
+                    //success: jsonpCallback,
+                    //error: function (xhr) {
+                    //    console.log(xhr);
+                    //},
+                    //complete: function () {
+                    //    console.log('completed');
+                    //}
+                });
+            }
+
+            function onclick(e)
+            {
+                var point = new Microsoft.Maps.Point(e.getX(), e.getY());
+                loc = e.target.tryPixelToLocation(point);
+                //loc = e.entity.getLocation();
+                pin.setLocation(loc);
+                var locationTobePassed = loc.latitude.toFixed(4) + ',' + loc.longitude.toFixed(4);
+                var url = 'http://dev.virtualearth.net/REST/v1/Locations/' + locationTobePassed + '?o=json&key=' + key
+                    + '&jsonp=jsonpCallback';
+                console.log(url);
+
+                $.ajax({
+                    type: 'GET',
+                    url: url,
+                    dataType: 'jsonp',
+                    crossDomain: true,
+                    timeout: 10000,
+                });
+            }
+            //map.LoadMap();
+            //var routeRequest = "http://dev.virtualearth.net/REST/v1/Routes?wp.0=" + document.getElementById('txtStart').value + "&wp.1=" + document.getElementById('txtEnd').value + "&routePathOutput=Points&output=json&jsonp=RouteCallback&key=" + credentials;
+            function RouteCallback(result) {
+
+
+                if (result &&
+                      result.resourceSets &&
+                      result.resourceSets.length > 0 &&
+                      result.resourceSets[0].resources &&
+                      result.resourceSets[0].resources.length > 0) {
+
+                    // Set the map view
+                    var bbox = result.resourceSets[0].resources[0].bbox;
+                    var viewBoundaries = Microsoft.Maps.LocationRect.fromLocations(new Microsoft.Maps.Location(bbox[0], bbox[1]), new Microsoft.Maps.Location(bbox[2], bbox[3]));
+                    map.setView({ bounds: viewBoundaries });
+
+
+                    // Draw the route
+                    var routeline = result.resourceSets[0].resources[0].routePath.line;
+                    var routepoints = new Array();
+
+                    for (var i = 0; i < routeline.coordinates.length; i++) {
+
+                        routepoints[i] = new Microsoft.Maps.Location(routeline.coordinates[i][0], routeline.coordinates[i][1]);
+                    }
+
+
+                    // Draw the route on the map
+                    var routeshape = new Microsoft.Maps.Polyline(routepoints, { strokeColor: new Microsoft.Maps.Color(200, 0, 0, 200) });
+                    map.entities.push(routeshape);
+
+                }
+            }
+        }
+        function GetOtherInfo() {
+            $("#dialogDiv").html('');
+            var address = $('#address1').val();
+            var house = address.substring(0, address.indexOf(' '));
+            var street = address.substring(address.indexOf(' ') + 1, address.length);
+            var key = "ac1700149007bb6192ae7ad41e7798ea";
+            var params = "house=" + house + ";street=" + street + ";city=" + $('#city').val() + ";state=" + $('#state').val();
+            var url = 'http://api.whitepages.com/reverse_address/1.0/?' + params + ';outputtype=JSONP;api_key=' + key + ";callback=?";
+            $.getJSON(url, function (data) {
+                console.log(data);
+                if (data.result.type == "success" && data.listings.length>0)
+                {
+                    for (var index = 0; index < data.listings.length; index++)
+                    {
+                        var person = data.listings[index];
+                        var phoneNumber = person.phonenumbers != undefined ? person.phonenumbers[0].fullphone : '';
+                        $('#dialogDiv').show().append('<div class="person"><span>'
+                            + person.displayname + ', </span><span>'
+                            + phoneNumber + '</span><input type="checkbox"/></div>').dialog({modal:true});
+                    }
+                    //$("#myMap").css("position:relative","width:70%");
+                    PopulatePersonalInfo(data.listings);
+                }
+                else {
+                    $("#errorMessage").css("display:block");
+                }
+                
+            });
+        }
+        function PopulatePersonalInfo(listings)
+        {
+            $.each($('#dialogDiv div input[type="checkbox"]'), function (index) {
+                console.log(this);
+                $(this).click(function () {
+                    if ($(this).is(":checked")) {
+                        $('#dialogDiv').dialog("close");
+                        var personDetail = listings[index];
+                        var person = personDetail.people[0];
+                        $("#firstName").val(person.firstname);
+                        $("#middleName").val(person.middlename);
+                        $("#lastName").val(person.lastname);
+                        $("#homePhone").val(personDetail.phonenumbers != undefined ? personDetail.phonenumbers[0].fullphone : '');
+                        
+                        $('#customer-info').dialog("open");
+                    }
+                });
+            });
+        }
+    </script>
+    <title></title>
+</head>
+<body onload="GetMap()">
+    <form name="customerForm" ng-model="customer" class="form-horizontal">
+        <fieldset>
+            <legend>Customer Info</legend>
+            <div style="width: 100%; clear: both;">
+                <div id="errorMessage" style="display: none;">
+                    <label style="font-weight: bold; color: red;">The address doesn't seems to be residential address.</label>
+                </div>
+                <div id="customer-info" title="Customer info">
+
+                    <div class="control-group">
+                        <label class="control-label" for="firstName">First Name</label>
+                        <div class="controls">
+                            <input name="firstName" id="firstName" type="text" maxlength="25" ng-model="customer.firstName" ng-required="true" fo-pattern="ALPHABET" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="middleName">Middle Name</label>
+                        <div class="controls">
+                            <input name="middleName" id="middleName" type="text" ng-model="customer.middleName" maxlength="25" fo-pattern="ALPHABET" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="lastName">Last Name</label>
+                        <div class="controls">
+                            <input name="lastName" id="lastName" type="text" ng-model="customer.lastName" maxlength="40" ng-required="true" fo-pattern="ALPHABETSPECCHAR" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="homePhone">Phone Number</label>
+                        <div class="controls">
+                            <input name="homePhone" id="homePhone" maxlength="10" ng-model="customer.homePhone" ng-required="true" phone-number-input />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="address1">Address 1</label>
+                        <div class="controls">
+                            <input name="address1" id="address1" type="text" maxlength="40" ng-model="customer.address1" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="address2">Address 2</label>
+                        <div class="controls">
+                            <input name="address2" id="address2" type="text" maxlength="40" ng-model="customer.address2" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="city">City</label>
+                        <div class="controls">
+                            <input name="city" id="city" class="input-large" type="text" maxlength="30" ng-model="customer.city" fo-pattern="ALPHABETSPACES" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="state">State</label>
+                        <div class="controls">
+                            <input type="text" id="state" />
+                            <!--<select name="state" id="state" ng-model="customer.state" ng-options="state.abbreviation as state.abbreviation for state in states"></select>-->
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="zipCode">Zip Code</label>
+                        <div class="controls">
+                            <input name="zipCode" id="zipCode" type="text" maxlength="9" ng-model="customer.zipCode" ui-mask="99999" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="email">Email</label>
+                        <div class="controls">
+                            <input name="email" id="email" type="text" ng-required="true" ng-model="customer.primaryEmail" maxlength="30" fo-pattern="EMAIL" />
+                        </div>
+                    </div>
+                </div>
+                <div id="dialogDiv" style="display: none;">
+                </div>
+                <div id="customer-map">
+                    <h4>Locate yourself</h4>
+                    <div id='myMap' style="width: 100%; height: 100%;"></div>
+                </div>
+            </div>
+            <div id="result"></div>
+        </fieldset>
+    </form>
+</body>
+</html>
