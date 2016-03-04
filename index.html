@@ -2,6 +2,9 @@
 <html >
     <head>
         <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <script type="text/javascript" src="libs/jquery.min.js"></script>
+        <script type="text/javascript" src="http://localhost:5984/_utils/script/jquery.couch.js"></script>
+        <script type="text/javascript" src="libs/pouchdb-5.2.1.min.js"></script>
     </head>
     <body>
     <script src="bundle.js"></script>
@@ -30,14 +33,9 @@
       </div>
        <div class="input-group version-dropdown">
       <div class="input-group-addon">Version</div>
-      <select class="form-control version-selector" style="float: right;">
-          <option value="2.1.2" selected="">2.1.2</option>
-          <option value="2.1.1">2.1.1</option>
-          <option value="2.1.0">2.1.0</option>
-          <option value="2.0.0">2.0.0</option>
-      </select>
+      <input id="pastedText" type="text" class="form-control version-selector" style="float: right;" />
         </div>
-      <div style="clear: both;"></div>
+      <div style="clear: both;"><button id="saveButton" type="button" class="btn btn-primary">Save</button></div>
       <br>
       <div data-library-version="2.1.2" class="assets">
           <table style="margin-top: 10px;" cellpadding="0" cellspacing="0" border="0" class="table table-striped" id="example">
