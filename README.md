@@ -82,11 +82,6 @@ curl -X PUT http://127.0.0.1:5984/perf
 Now, create a file in the root of your project, call it view.json. Paste the view-source code from 'Can I run CouchDb locally?' into this file. Next, create the view:
 curl -X PUT http://127.0.0.1:5984/perf/_design/resultViewer --data-binary @view.json
 
-Now CouchDb is setup and ready to go on Cloud9.
-
-Can I run CouchDb locally?
-
-Yup. Install Apache CouchDb on your local machine. Create a new database called 'perf' through the web interface.
 
 Go into the newly created 'perf' database, and create a new Document (you can find the option in the top of the screen). When creating the new document, go to "Source" edit mode (right side of the screen) and paste in the following snippet.
 ```
